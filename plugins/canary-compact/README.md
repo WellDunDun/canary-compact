@@ -1,112 +1,96 @@
 # Canary Compact
 
-Detects a canary word in assistant replies and prompts session compaction.
+Canary Compact helps long Claude Code sessions end cleanly before they run out of useful context.
 
-## Contents
+When an assistant reply contains a canary word, the plugin's Claude Code hook keeps the session alive and asks Claude to produce a compact-ready handoff summary plus the exact `/compact` command for you to submit.
 
-- `.claude-plugin/plugin.json`: Claude Code plugin manifest.
-- `.codex-plugin/plugin.json`: Codex plugin manifest.
-- `bin/canary-compact-hook`: Runtime launcher for the compiled helper.
-- `hooks/hooks.json`: Claude Code hook wiring.
-- `LICENSE`: MIT license for the installable plugin package.
-- `skills/canary-compact/SKILL.md`: Shared usage skill.
-- `skills/canary-compact/references/setup.md`: Setup instructions for project files.
-- `skills/canary-compact/scripts/setup-canary-instructions.sh`: Idempotent setup script.
-
-The shared `skills/` directory and compiled helper keep behavior in one place while each host reads its own manifest.
-
-## Behavior
-
-The default canary word is `CANARY_COMPACT`.
-
-In Claude Code, the plugin registers a `Stop` hook. The hook reads `last_assistant_message`, checks for the canary word, and returns `additionalContext` asking Claude to produce a compact-ready handoff and a `/compact` command.
-
-Claude Code hooks can inspect replies and continue the conversation, but they do not expose a hook action that directly invokes the built-in `/compact` slash command. This plugin therefore gets as close as the current hook API allows without recursively spawning Claude.
-
-## Runtime packaging
-
-The hook does not call `python3`, `node`, or `jq`. It calls `sh bin/canary-compact-hook`, which selects a compiled Go helper from `bin/<os>-<arch>/`.
-
-Build release binaries from the repository root:
-
-```sh
-sh scripts/build-plugin-binaries.sh
-```
-
-The build script writes:
+Default canary word:
 
 ```text
-plugins/canary-compact/bin/darwin-amd64/canary-compact-hook
-plugins/canary-compact/bin/darwin-arm64/canary-compact-hook
-plugins/canary-compact/bin/linux-amd64/canary-compact-hook
-plugins/canary-compact/bin/linux-arm64/canary-compact-hook
-plugins/canary-compact/bin/windows-amd64/canary-compact-hook.exe
+CANARY_COMPACT
 ```
 
-## Support matrix
+## What it does
 
-| Host | Platform | Status | Runtime path | Notes |
-| --- | --- | --- | --- | --- |
-| Claude Code | macOS arm64 | Supported | `bin/darwin-arm64/canary-compact-hook` | Automatic `Stop` hook via `sh bin/canary-compact-hook`. |
-| Claude Code | macOS amd64 | Supported | `bin/darwin-amd64/canary-compact-hook` | Automatic `Stop` hook via `sh bin/canary-compact-hook`. |
-| Claude Code | Linux arm64 | Supported | `bin/linux-arm64/canary-compact-hook` | Automatic `Stop` hook via `sh bin/canary-compact-hook`. |
-| Claude Code | Linux amd64 | Supported | `bin/linux-amd64/canary-compact-hook` | Automatic `Stop` hook via `sh bin/canary-compact-hook`. |
-| Claude Code | Windows amd64 | Experimental | `bin/windows-amd64/canary-compact-hook.exe` | Binary is built, but the current hook manifest uses POSIX `sh`; publish a Windows-specific hook variant before claiming full support. |
-| Codex | All platforms | Skill-only | N/A | Codex plugin manifests in this environment do not support automatic hook wiring. |
+- Watches Claude Code assistant replies at the `Stop` hook event.
+- Detects a configurable canary word in the final assistant message.
+- Prompts Claude to summarize current task state, decisions, changed files, tests, blockers, and next steps.
+- Shows the `/compact` command to run with that handoff as focus instructions.
+- Adds a setup skill that can install the canary instruction into `CLAUDE.md` and `AGENTS.md`.
 
-## Claude Code local testing
+The plugin does not run `/compact` automatically. Claude Code hooks can continue a conversation, but they do not currently expose an API for invoking the built-in `/compact` command directly.
 
-Load the plugin directly during development:
+## Set up a project
 
-```sh
-claude --plugin-dir ./plugins/canary-compact
-```
-
-Then run the skill in Claude Code:
-
-```text
-/canary-compact:canary-compact
-```
-
-Install the project-level canary instruction:
+After installing the plugin, run the setup skill inside Claude Code:
 
 ```text
 /canary-compact:canary-compact setup
 ```
 
-The setup flow updates `CLAUDE.md` and `AGENTS.md` with an idempotent managed block. Pass a custom word and optional target files when needed:
+That command adds an idempotent managed block to:
+
+- `CLAUDE.md`
+- `AGENTS.md`
+
+Use a custom canary word when you want one:
 
 ```text
-/canary-compact:canary-compact setup CUSTOM_CANARY_WORD CLAUDE.md AGENTS.md
+/canary-compact:canary-compact setup SESSION_NEEDS_COMPACT
 ```
 
-You can also install it through this repository's local Claude marketplace:
+Target specific instruction files when needed:
 
 ```text
-/plugin marketplace add .
-/plugin install canary-compact@canary-compact-plugins
+/canary-compact:canary-compact setup SESSION_NEEDS_COMPACT CLAUDE.md AGENTS.md "docs/agent notes.md"
 ```
 
-## Codex local testing
+The setup script creates missing files, replaces its own managed block on later runs, and refuses to rewrite files with broken or duplicated markers.
 
-This repo includes a Codex marketplace entry at `.agents/plugins/marketplace.json`.
+## Use it
 
-Add the local marketplace from the repository root, then install the plugin:
+Work normally. When the assistant decides the session should be compacted, it should include the canary word in its reply.
 
-```sh
-codex plugin marketplace add .
-codex plugin add canary-compact@canary-compact-plugins
-```
+When the hook sees the canary word, Claude Code receives extra context telling it to stop unrelated work and produce a handoff. Submit the `/compact` command it gives you, then continue from the compacted session.
 
-Start a new Codex thread after installing or reinstalling so new plugin skills are picked up.
+## Configuration
 
-## Extending the skill
+Set these environment variables before starting Claude Code when you want to change matching behavior:
 
-Add references or scripts under the existing `skills/canary-compact/` directory unless you are introducing a genuinely separate user-facing workflow:
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `CANARY_COMPACT_WORD` | `CANARY_COMPACT` | Canary word to detect. |
+| `CANARY_COMPACT_CASE_SENSITIVE` | `true` | Set to `false` for case-insensitive matching. |
+| `CANARY_COMPACT_WHOLE_WORD` | `false` | Set to `true` to require token-boundary matching. |
 
-```text
-skills/canary-compact/references/<topic>.md
-skills/canary-compact/scripts/<helper>.sh
-```
+Detections are appended to `canary-detections.jsonl` under Claude Code's plugin data directory when `CLAUDE_PLUGIN_DATA` is available.
 
-Claude Code invokes the main skill as `/canary-compact:canary-compact`. Codex discovers it through the `skills` path in `.codex-plugin/plugin.json`.
+## Runtime requirements
+
+No Python, Node, Go, or jq install is required for normal use. The plugin ships compiled helper binaries and uses a small POSIX shell launcher.
+
+## Support matrix
+
+| Host | Platform | Status | Notes |
+| --- | --- | --- | --- |
+| Claude Code | macOS arm64 | Supported | Automatic `Stop` hook. |
+| Claude Code | macOS amd64 | Supported | Automatic `Stop` hook. |
+| Claude Code | Linux arm64 | Supported | Automatic `Stop` hook. |
+| Claude Code | Linux amd64 | Supported | Automatic `Stop` hook. |
+| Claude Code | Windows amd64 | Experimental | Binary is included, but the current hook manifest uses POSIX `sh`. |
+| Codex | All platforms | Skill-only | Codex plugin manifests in this environment do not support automatic hook wiring. |
+
+## Troubleshooting
+
+If the hook does not trigger:
+
+1. Make sure Claude Code is running with the plugin installed or loaded with `--plugin-dir`.
+2. Confirm the assistant reply contains the exact canary word.
+3. Check whether you changed `CANARY_COMPACT_CASE_SENSITIVE` or `CANARY_COMPACT_WHOLE_WORD`.
+4. Run `/canary-compact:canary-compact setup` again if the project instruction block is missing or stale.
+
+If you are testing locally after editing the plugin, run `/reload-plugins` or restart Claude Code.
+
+## License
+
+MIT
