@@ -13,6 +13,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.22.12"
+          cache: false
       - run: go test ./...
       - run: sh scripts/test-setup-script.sh
       - run: sh scripts/build-plugin-binaries.sh

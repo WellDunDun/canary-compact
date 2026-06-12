@@ -1,6 +1,6 @@
 {
   "name": "canary-compact",
-  "version": "0.2.0+codex.20260612161430",
+  "version": "0.2.0+codex.20260612162513",
   "description": "Detects a canary word in assistant replies and prompts session compaction.",
   "author": {
     "name": "Local developer"

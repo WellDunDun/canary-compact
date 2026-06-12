@@ -14,7 +14,11 @@ build_one() {
 
   output="$target_dir/canary-compact-hook$ext"
   echo "building $goos/$goarch -> $output"
-  (cd "$root" && CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" go build -trimpath -ldflags "-s -w" -o "$output" "$package")
+  (
+    cd "$root"
+    CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" \
+      go build -trimpath -buildvcs=false -ldflags "-s -w -buildid=" -o "$output" "$package"
+  )
 
   if [ "$ext" = "" ]; then
     chmod 0755 "$output"
