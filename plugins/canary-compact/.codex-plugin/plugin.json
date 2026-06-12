@@ -1,0 +1,32 @@
+{
+  "name": "canary-compact",
+  "version": "0.2.0+codex.20260612161430",
+  "description": "Detects a canary word in assistant replies and prompts session compaction.",
+  "author": {
+    "name": "Local developer"
+  },
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "codex",
+    "plugin",
+    "skills"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Canary Compact",
+    "shortDescription": "Detect canary-triggered compaction requests.",
+    "longDescription": "Canary Compact packages a compiled canary-word detector for Claude Code and Codex. Claude Code wires it into a Stop hook; Codex exposes the behavior as reusable skills and helper source until plugin hooks are supported.",
+    "developerName": "Local developer",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Skills"
+    ],
+    "defaultPrompt": [
+      "Configure the canary compact word.",
+      "Explain the canary compaction hook.",
+      "Test the canary detector helper."
+    ],
+    "brandColor": "#2563EB"
+  }
+}

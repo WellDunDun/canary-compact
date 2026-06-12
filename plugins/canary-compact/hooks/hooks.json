@@ -1,0 +1,16 @@
+{
+  "description": "Detect the canary compact word in final assistant replies.",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/bin/canary-compact-hook\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

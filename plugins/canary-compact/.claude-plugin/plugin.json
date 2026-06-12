@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "canary-compact",
+  "displayName": "Canary Compact",
+  "version": "0.2.0",
+  "description": "Detects a canary word in assistant replies and prompts session compaction.",
+  "author": {
+    "name": "Local developer"
+  },
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "codex",
+    "plugin",
+    "skills"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json"
+}

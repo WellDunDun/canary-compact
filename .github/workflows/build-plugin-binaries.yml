@@ -1,0 +1,21 @@
+name: Build plugin binaries
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.12"
+      - run: go test ./...
+      - run: sh scripts/test-setup-script.sh
+      - run: sh scripts/build-plugin-binaries.sh
+      - run: git diff --exit-code -- plugins/canary-compact/bin
+      - run: test -x plugins/canary-compact/bin/linux-amd64/canary-compact-hook
+      - run: test -f plugins/canary-compact/bin/windows-amd64/canary-compact-hook.exe

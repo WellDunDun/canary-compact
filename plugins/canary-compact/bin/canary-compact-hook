@@ -1,0 +1,33 @@
+#!/usr/bin/env sh
+set -eu
+
+os=$(uname -s 2>/dev/null | tr '[:upper:]' '[:lower:]')
+arch=$(uname -m 2>/dev/null)
+
+case "$os" in
+  darwin) os="darwin" ;;
+  linux) os="linux" ;;
+  *)
+    echo "canary-compact: unsupported OS: $os" >&2
+    exit 1
+    ;;
+esac
+
+case "$arch" in
+  arm64|aarch64) arch="arm64" ;;
+  x86_64|amd64) arch="amd64" ;;
+  *)
+    echo "canary-compact: unsupported architecture: $arch" >&2
+    exit 1
+    ;;
+esac
+
+helper_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+helper="$helper_dir/$os-$arch/canary-compact-hook"
+
+if [ ! -x "$helper" ]; then
+  echo "canary-compact: missing helper binary: $helper" >&2
+  exit 1
+fi
+
+exec "$helper" "$@"

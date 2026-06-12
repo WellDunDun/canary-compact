@@ -1,0 +1,25 @@
+{
+  "name": "canary-compact-plugins",
+  "owner": {
+    "name": "Local developer"
+  },
+  "description": "Local Claude Code plugin marketplace for canary-compact.",
+  "plugins": [
+    {
+      "name": "canary-compact",
+      "displayName": "Canary Compact",
+      "source": "./plugins/canary-compact",
+      "description": "Detects a canary word in assistant replies and prompts session compaction.",
+      "version": "0.2.0",
+      "author": {
+        "name": "Local developer"
+      },
+      "category": "development",
+      "tags": [
+        "claude-code",
+        "codex",
+        "skills"
+      ]
+    }
+  ]
+}
